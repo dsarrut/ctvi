@@ -26,9 +26,14 @@ def ctvi(exhale, inhale, lung_mask, options):
     ctvi2 = np.divide(diff, inh+1000, out=np.zeros_like(exh), where=inh+1000!=0)
     ctvi = ctvi1*ctvi2
 
+    # scaling factor
+    spacing = exhale.GetSpacing()
+    vol = spacing[0]*spacing[1]*spacing[2]
+    ctvi = ctvi/-1000*vol
+    
     # mask according to lung mask
     ctvi[mask==0] = 0
-    
+
     # convert to float32 required by itk
     ctvi = ctvi.astype(
         np.float32)

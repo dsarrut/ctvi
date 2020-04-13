@@ -19,7 +19,6 @@ def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss):
     '''
 
     print(exhale, inhale, lung_mask)
-    
     exhale = itk.imread(exhale)
     inhale = itk.imread(inhale)
     lung_mask = itk.imread(lung_mask)
@@ -27,8 +26,11 @@ def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss):
     options={}
     o = ctvi(exhale, inhale, lung_mask, options)
 
+    
+
     if sigma_gauss != 0:
         o = img_gauss(o, sigma_gauss)
+        
     itk.imwrite(o, output)
 
 # --------------------------------------------------------------------------
