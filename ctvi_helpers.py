@@ -54,3 +54,16 @@ def img_gauss(img, sigma):
     smoothFilter.SetSigma(sigma)
     smoothFilter.Update()
     return smoothFilter.GetOutput()
+
+
+def img_median(img, radius):
+    '''
+    Median Filtering 
+    '''
+    ImageType = type(img)
+    medianFilter = itk.MedianImageFilter[ImageType, ImageType].New()
+    medianFilter.SetInput(img)
+    medianFilter.SetRadius(radius)
+    medianFilter.Update()
+    return medianFilter.GetOutput()
+

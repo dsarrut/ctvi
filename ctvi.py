@@ -13,7 +13,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--lung_mask', '-m')
 @click.option('--output', '-o')
 @click.option('--sigma_gauss', '-s', default=0)
-def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss):
+@click.option('--radius_median', '-r', default=0)
+def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss, radius_median):
     '''
     Doc todo
     '''
@@ -26,10 +27,11 @@ def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss):
     options={}
     o = ctvi(exhale, inhale, lung_mask, options)
 
-    
-
     if sigma_gauss != 0:
         o = img_gauss(o, sigma_gauss)
+
+    if radius_median != 0:
+        o = img_median(o, radius_median)
         
     itk.imwrite(o, output)
 
