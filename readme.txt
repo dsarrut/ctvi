@@ -9,6 +9,6 @@ clitkAffineTransform -i 0.0.mhd -o 0.0_resampled.mhd --like result_50.0_0.0.mhd
 clitkAffineTransform -i 50.0.mhd -o 50.0_resampled.mhd --like result_50.0_0.0.mhd
 clitkAffineTransform -i lungs_50.0.mhd -o lungs_50.0_resampled.mhd --like result_50.0_0.0.mhd --interp=0
 
-./ventil/ctvi.py -e PJ9/50.0_resampled.mhd -i PJ9/result_50.0_0.0.mhd -m PJ9/lungs_50.0_resampled.mhd -o output/a.mhd -s 2
-
-
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png/axial
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png/sagittal
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png/coronal

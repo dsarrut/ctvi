@@ -1,6 +1,10 @@
 
 import itk
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib import cm
 
 def ctvi(exhale, inhale, lung_mask, options):
     '''
@@ -73,4 +77,58 @@ def ctvi_delta_HU_Eslick2018(exh, inh, vol):
     ctvi[ctvi<0] = 0
     
     return ctvi
+
+def get_colormap1():
+    # color palette
+    # https://matplotlib.org/tutorials/colors/colormaps.html
+    cmap = plt.get_cmap('afmhot')
+    cmap_ct = plt.get_cmap('gray')
+
+    # build another palette with opacity 
+    ncolors = 256
+    color_array = cmap(range(ncolors))
+    color_array[0:1, -1] = 0
+    color_array[1:, -1] = 0.8
+    map_object = LinearSegmentedColormap.from_list(name='afmhot_alpha',colors=color_array)
+    plt.register_cmap(cmap=map_object)
+    cmap = plt.get_cmap('afmhot_alpha')
+
+    # https://matplotlib.org/3.2.1/tutorials/colors/colormapnorms.html
+    norm=colors.Normalize()
+    #norm=colors.PowerNorm(gamma=2)
+    #norm=colors.LogNorm()
+
+    return cmap, cmap_ct, norm
+
+
+def get_slice(img, axis, slice_nb):
+    if axis == 0:
+        img = img[slice_nb, :, :]
+    if axis == 1:
+        img = img[:, slice_nb, :]
+        # upside down
+        img = np.flip(img, 0)
+    if axis == 2:
+        img = img[:, :, slice_nb]
+        # upside down
+        img = np.flip(img, 0)
+    return img
+
+
+def save_img(filename, ctvi, ct, mask, cmap, cmap_ct, norm):
+    #https://fengl.org/2014/07/09/matplotlib-savefig-without-borderframe/
+    # create an image with the exact same nb of pixels than the images
+    # if spacing is not equal -> will be incorrect
+    sizes = np.shape(ctvi)
+    height = float(sizes[0])
+    width = float(sizes[1])
+    fig = plt.figure()
+    fig.set_size_inches(width/height, 1, forward=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.imshow(ct, aspect='equal', cmap=cmap_ct, alpha=1.0, vmax=300, vmin=-1000)
+    ax.imshow(ctvi, aspect='equal', cmap=cmap, norm=norm, vmax=1.0)
+    plt.savefig(filename, dpi = height) 
+    plt.close()
 
