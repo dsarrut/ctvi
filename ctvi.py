@@ -27,11 +27,14 @@ def ctvi_click(exhale, inhale, lung_mask, output, sigma_gauss, radius_median):
     options={}
     o = ctvi(exhale, inhale, lung_mask, options)
 
+    # Gaussian filter
+    # According to itk doc: 'Sigma is measured in the units of image spacing'
     if sigma_gauss != 0:
-        o = img_gauss(o, sigma_gauss)
+        o = itk.recursive_gaussian_image_filter(o, sigma=sigma_gauss)
 
+    # Median filter (recommanded)
     if radius_median != 0:
-        o = img_median(o, radius_median)
+        o = itk.median_image_filter(o, radius=2)
         
     itk.imwrite(o, output)
 

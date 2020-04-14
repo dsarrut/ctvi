@@ -74,26 +74,3 @@ def ctvi_delta_HU_Eslick2018(exh, inh, vol):
     
     return ctvi
 
-def img_gauss(img, sigma):
-    '''
-    Apply Gaussian smoothing filter.
-    According to itk doc: 'Sigma is measured in the units of image spacing'
-    '''
-    ImageType = type(img)
-    smoothFilter = itk.SmoothingRecursiveGaussianImageFilter[ImageType, ImageType].New()
-    smoothFilter.SetInput(img)
-    smoothFilter.SetSigma(sigma)
-    smoothFilter.Update()
-    return smoothFilter.GetOutput()
-
-
-def img_median(img, radius):
-    '''
-    Median Filtering
-    '''
-    ImageType = type(img)
-    medianFilter = itk.MedianImageFilter[ImageType, ImageType].New()
-    medianFilter.SetInput(img)
-    medianFilter.SetRadius(radius)
-    medianFilter.Update()
-    return medianFilter.GetOutput()
