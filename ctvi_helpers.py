@@ -6,7 +6,7 @@ import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
 
-def ctvi(exhale, inhale, lung_mask, options):
+def compute_ctvi(exhale, inhale, lung_mask, options):
     '''
     Doc todo.
     exhale, inhale, lung_mask: itk images
@@ -132,3 +132,70 @@ def save_img(filename, ctvi, ct, mask, cmap, cmap_ct, norm):
     plt.savefig(filename, dpi = height) 
     plt.close()
 
+
+def erode_mask(image, radius):
+    '''
+    I did not manage to use the following filter:
+    o = itk.binary_erode_image_filter(mask, ???)
+    help(itk.binary_erode_image_filter)
+    '''
+
+    ImageType = type(image)
+    Dimension = image.GetImageDimension()
+    
+    StructuringElementType = itk.FlatStructuringElement[Dimension]
+    structuringElement = StructuringElementType.Ball(radius)
+    ErodeFilterType = itk.BinaryErodeImageFilter[ImageType,
+                                                 ImageType,
+                                                 StructuringElementType]
+    erodeFilter = ErodeFilterType.New()
+    erodeFilter.SetInput(image)
+    erodeFilter.SetForegroundValue(1)
+    erodeFilter.SetKernel(structuringElement)
+    erodeFilter.Update()
+    
+    return erodeFilter.GetOutput()
+
+
+
+def dilate_at_boundaries(image, radius):
+    '''
+    Dilate the input image only near boundaries (defined by values == 0)
+    '''
+
+    ImageType = type(image)
+    Dimension = image.GetImageDimension()
+
+    StructuringElementType = itk.FlatStructuringElement[Dimension]
+    structuringElement = StructuringElementType.Ball(radius)
+
+    grayscaleFilter = itk.GrayscaleDilateImageFilter[
+        ImageType, ImageType, StructuringElementType].New()
+    grayscaleFilter.SetInput(image)
+    grayscaleFilter.SetKernel(structuringElement)
+    grayscaleFilter.Update()
+
+    o = grayscaleFilter.GetOutput()
+
+    o = itk.array_from_image(o)
+    c = itk.array_from_image(image)
+    o[c>0.0] = 0
+    o = c+o
+
+    o = itk.image_from_array(o)
+    o.CopyInformation(image)
+
+    return o
+
+
+def OLD_median_image_filter(image, radius):
+
+    ImageType = type(image)
+    Dimension = image.GetImageDimension()
+    medianFilter = itk.MedianImageFilter[ImageType, ImageType].New()
+    medianFilter.SetInput(radius)
+    medianFilter.SetRadius(radius)
+    medianFilter.Update()
+    o = medianFilter.GetOutput()
+
+    return o

@@ -1,5 +1,30 @@
 
-First test
+
+* Second test
+
+First, erode the lung mask. 
+
+./erode_mask.py -i ../CC10/lung.mhd -o ../CC10/lung_eroded.mhd -r 1
+
+
+Compute the ctvi
+
+./ctvi.py -e ../CC10/exhale.mhd -i ../CC10/result_50.0_0.0.mhd -m ../CC10/lung_eroded.mhd -o ../output/b.mhd -r 1
+
+
+Display some slices
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 90 -a 0  -o ../output/bidon_axial
+
+
+All slices:
+
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png2/axial
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png2/sagittal
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png2/coronal
+
+
+
+* First test
 
 0.0.mhd = inhale
 50.0.mhd = exhale
@@ -12,3 +37,13 @@ clitkAffineTransform -i lungs_50.0.mhd -o lungs_50.0_resampled.mhd --like result
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png/axial
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png/sagittal
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png/coronal
+
+
+montage ../png/axial_* -geometry 100 axial_small.png
+montage ../png/sagittal_* -geometry 100 sagittal_small.png
+montage ../png/coronal_* -geometry 100 coronal_small.png
+
+montage ../png/axial_* -geometry 400 axial_large.png
+montage ../png/sagittal_* -geometry 400 sagittal_large.png
+montage ../png/coronal_* -geometry 400 coronal_large.png
+
