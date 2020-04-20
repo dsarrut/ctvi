@@ -1,4 +1,8 @@
 
+* add stats
+
+for debug
+./ctvi_stats.py -e ../CC10/exhale.mhd -i ../CC10/inhale.mhd -t ../CC10/result_50.0_0.0.mhd --ctvi ../output/b.mhd --lung_mask_exh ../CC10/lung.mhd --lung_mask_inh ../CC10/lungs_0.0.mhd
 
 * Second test
 
@@ -22,7 +26,9 @@ All slices:
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png2/sagittal
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png2/coronal
 
-
+montage ../png2/axial_* -geometry 250 montage2/axial_large.png
+montage ../png2/sagittal_* -geometry 250 montage2/sagittal_large.png
+montage ../png2/coronal_* -geometry 250 montage2/coronal_large.png
 
 * First test
 

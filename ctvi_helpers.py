@@ -199,3 +199,22 @@ def OLD_median_image_filter(image, radius):
     o = medianFilter.GetOutput()
 
     return o
+
+def pix_vol(img):
+    spacing = img.GetSpacing()
+    return spacing[0]*spacing[1]*spacing[2]
+
+
+def approx_mass(pix_vol, img, mask):
+    # HU = 1000 x (mu-mu_w) / (mu_w - mu_air)
+    # mu = HU/1000 * (mu_w-mu_a) + mu_w
+    # This is WRONG for H > 0 !
+    # See for ex Schneider2000
+    mu_w = 1
+    mu_a = 0.0
+    d = img/1000.0 * (mu_w-mu_a) + mu_w
+    d[~mask] = 0.0
+    # pix_vol is in L -> to put in cc
+    # d is in g/cc
+    s = d.sum()*pix_vol*1e-3 # in grams
+    return s
