@@ -1,0 +1,55 @@
+
+Cmd lines test patient acsa
+
+* convert
+
+clitkDicom2Image Acsa/A10142100241_20200420/Thorax_EXPI_1mm_PARENCHYME/*dcm -o exhale.mhd
+clitkDicom2Image Acsa/A10142100241_20200420/Thorax_INSPI_1mm_PARENCHYME/*dcm -o inhale.mhd
+
+clitkAffineTransform -i inhale.mhd --spacinglike exhale.mhd -o inhale_resampled.mhd
+
+* masks
+
+clitkExtractPatient -i exhale.mhd -o exhale_patient.mhd --noAutoCrop  -a exhale.afdb
+
+clitkExtractLung -i exhale.mhd -o exhale_lung.mhd --doNotSeparateLungs --type 0 --upper -320 --seed -4,-151,-25 --verboseRG --verboseStep -v --upperThresholdForTrachea -950  --noAutoCrop  -a exhale.afdb
+
+- mask lung not perfect
+- to do for inhale 
+- warning: think about .afdb to not mix inhale/exhale intermediate output
+- maybe add holes filling ? 
+
+* dir
+
+elastix -f exhale.mhd -m inhale.mhd -out output -p params_elastix_template6.txt
+
+- bad results
+- maybe need first rigid registration (rigid_reg_params_elastix.txt), not tested here
+- to test with motion mask 
+- to test with Vivien Bspline methods
+
+* ctvi
+
+Erode first the mask (not sure needed)
+../ventil/erode_mask.py -i exhale_lung.mhd -o exhale_lung_eroded.mhd -r 1
+
+Compute the ctvi image ; r is the median filter radius
+../ventil/ctvi.py -e exhale.mhd -i ../output6/result.0.mhd -m exhale_lung_eroded.mhd -o output_ctvi/a.mhd -r 2
+
+- a lot of parameters could be changed here
+- to be discussed together once the registration will be correct
+
+
+Example of image generation
+==> WARNING, the image ratio is not ok (spacing not used). Must be changed somewhere 
+
+../ventil/ctvi_slicer.py -i output_ctvi/a.mhd --ct exhale.mhd -m exhale_lung.mhd -a 0 -o output_ctvi/png/a_axial -s 63 --slice_stop 540 --slice_step 4
+
+../ventil/ctvi_slicer.py -i output_ctvi/a.mhd --ct exhale.mhd -m exhale_lung.mhd -a 1  -o output_ctvi/png/a_coronal -s 77 --slice_stop 327 --slice_step 4
+
+../ventil/ctvi_slicer.py -i output_ctvi/a.mhd --ct exhale.mhd -m exhale_lung.mhd -a 2  -o output_ctvi/png/a_sagittal -s 165 --slice_stop 396 --slice_step 4
+
+montage output_ctvi/png/a_axial_* -geometry 512 output_ctvi/axial_large.png
+montage output_ctvi/png/a_sagittal_* -geometry 512 output_ctvi/sagittal_large.png
+montage output_ctvi/png/a_coronal_* -geometry 512 output_ctvi/coronal_large.png
+
