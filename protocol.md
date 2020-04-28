@@ -35,7 +35,7 @@ Simon's cmd lines:
 ```
 clitkExtractPatient -i inhale_mediastinal.mhd -o inhale_patient.mhd --noAutoCrop  -a inhale.afdb
 
-clitkExtractLung -i inhale_mediastinal.mhd -o inhale_lung.mhd  -a inhale.afdb --noAutoCrop --type 0 --outputTrachea inhale_trachea.mha  --verboseRG --verboseStep -v --seed -8,-130,-117 --doNotCheckTracheaVolume --upperThresholdForTrachea -950
+clitkExtractLung -i inhale_mediastinal.mhd -o inhale_lung.mhd  -a inhale.afdb --noAutoCrop --type 0 --outputTrachea inhale_trachea.mha  --verboseRG --verboseStep -v --seed -8,-130,-117 --doNotCheckTracheaVolume --upperThresholdForTrachea -950 
 
 clitkImageConvert inhale_mediastinal.mhd inhale_float.mha -t float
 
@@ -56,13 +56,22 @@ clitkExtractBones -i exhale_float.mha -o exhale_bones.mhd -a exhale.afdb --lower
 clitkMotionMask -i exhale_float.mha -o exhale_mm.mhd --featureLungs exhale_lung.mhd --featureBones exhale_bones.mhd --fillingLevel 94 --offset 0,-50,0 --pad --writeFeature exhale_feature.mhd --writeEllips=exhale_ellipse.mhd --writeDistMap=exhale_distmap.mhd --writeGrownEllips=exhale_GrownEllipsImage.mhd  -v --axes 100,30,250
 ```
 
+The ctvi.py scripts need to have the mask with the exact same spacing/support for all images:
+
+```
+clitkAffineTransform -i exhale_lung.mhd -o exhale_lung_resampled.mhd --like exhale_parenchyma.mhd
+```
+
 
 # registration
 
 - where is the elastix + plugin version ? 
 
 - rigid parameters
-  - todo
+
+```
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output/output_rigid1 -p params/rigid_reg_params_elastix.txt -fMask exhale_patient.mhd
+```
 
 
 - deformable parameters
@@ -74,16 +83,30 @@ clitkMotionMask -i exhale_float.mha -o exhale_mm.mhd --featureLungs exhale_lung.
   - other params ? See file Par0016.multibsplines.lung.sliding.txt
 
 
+```
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid9 -p params/dir_bspline5.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+```
+
+
 - results
   - which reference image ? exhale or inhale ? -> exhale in most of the papers
   - need inhale image deformed to exhale -> need inverse of the DVF ? 
   - with same spacing/support than exhale
   - need Jacobian image 
-  
+
+```
+clitkSetBackground -i output_nonrigid9/result.0.mhd -o output_nonrigid9/result.0_bg.mhd -m exhale_lung.mhd -p -1000
+```
+
+For use mediastinal instead of parenchyma:
+```
+./transformix -in exhale_mediastinal.mhd -tp output_nonrigid9/TransformParameters.0.txt -out output_nonrigid9_med
+clitkAffineTransform -i output_nonrigid9_med/result.mhd -o output_nonrigid9_med/result_resampled.mhd --like exhale_mediastinal.mhd
+clitkSetBackground -i output_nonrigid9_med/result_resampled.mhd -o output_nonrigid9_med/result_resampled_bg.mhd -m exhale_lung.mhd -p -1000
+```
+
   
 - is it possible to check/validate the results ? 
-
-
 
 
 # ctvi
@@ -101,6 +124,22 @@ clitkMotionMask -i exhale_float.mha -o exhale_mm.mhd --featureLungs exhale_lung.
 - normalisation ? 
   - in Kipritidis2019: 90th percentile
   - Maciej propose to normalise by lung air volume difference (bw exhale and inhale) 
+  
+
+Erode the mask before to avoid border effect
+```
+../ventil/erode_mask.py -i exhale_lung.mhd -o exhale_lung_eroded.mhd -r 1
+../ventil/erode_mask.py -i exhale_lung_resampled.mhd -o exhale_lung_resampled_eroded.mhd -r 1
+```
+
+  
+```
+../ventil/ctvi.py -e exhale_mediastinal.mhd -i output_nonrigid9_med/result_resampled.mhd -m exhale_lung_eroded.mhd -r 2 -o output_ctvi/b_rho.mhd --rho_normalize
+
+```
+
+
+  
 
 # ctvi regional index
 

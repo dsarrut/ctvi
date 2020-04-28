@@ -23,8 +23,8 @@ Display some slices
 All slices:
 
 ./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png2/axial
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png2/sagittal
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png2/coronal
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png2/sagittal
+./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png2/coronal
 
 montage ../png2/axial_* -geometry 250 montage2/axial_large.png
 montage ../png2/sagittal_* -geometry 250 montage2/sagittal_large.png

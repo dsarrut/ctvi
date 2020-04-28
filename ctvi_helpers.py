@@ -33,7 +33,7 @@ def compute_ctvi(exhale, inhale, lung_mask, options):
     #ctvi = ctvi_delta_HU_Kipritidis2019(exh, inh, vol)
 
     # Version2
-    ctvi = ctvi_delta_HU_Eslick2018(exh, inh, vol)
+    ctvi = ctvi_delta_HU_Eslick2018(exh, inh, vol, options)
 
     # mask according to lung mask
     ctvi[mask==0] = 0
@@ -45,6 +45,38 @@ def compute_ctvi(exhale, inhale, lung_mask, options):
     ctvi = ctvi.astype(np.float32)
     img = itk.image_from_array(ctvi)
     img.CopyInformation(exhale)
+
+        # Gaussian filter
+    # According to itk doc: 'Sigma is measured in the units of image spacing'
+    if options.sigma_gauss != 0:
+        img = itk.recursive_gaussian_image_filter(img, sigma=options.sigma_gauss)
+
+    # Median filter (recommanded)
+    if options.radius_median != 0:
+        #itk.imwrite(ctvi, 'ctvi_before.mhd')
+        #ctvim = itk.median_image_filter(ctvi, radius=radius_median)
+        #itk.imwrite(ctvim, 'ctvi_median.mhd')
+        dctvi = dilate_at_boundaries(img, 1)
+        #itk.imwrite(dctvi, 'ctvi_before_dilated.mhd')
+        ctvi = itk.median_image_filter(dctvi, radius=options.radius_median)
+        #itk.imwrite(ctvi, 'ctvi_median_after_dilated.mhd')
+
+        # reapply mask after median
+        ctvi = itk.array_from_image(ctvi)
+        ctvi = ctvi.astype('float')
+        ctvi[mask==0] = 0
+        ctvi = ctvi.astype(np.float32)
+        img = itk.image_from_array(ctvi)
+        img.CopyInformation(exhale)
+
+    # remove 10% higher
+    if options.remove_10pc:
+        t = np.quantile(ctvi[ctvi>0], 0.9)
+        print('Q90%', t)
+        ctvi[ctvi>t] = 0
+        img = itk.image_from_array(ctvi)
+        img.CopyInformation(exhale)
+
 
     return img
 
@@ -63,15 +95,16 @@ def ctvi_delta_HU_Kipritidis2019(exh, inh, vol):
     return ctvi
 
 
-def ctvi_delta_HU_Eslick2018(exh, inh, vol):
+def ctvi_delta_HU_Eslick2018(exh, inh, vol, options):
     # Version2: Eslick2018, p269
     # CTVI_delta_HU = (exh-inh) / (inh+1000) * rho
     # rho = (ex+1000)/1000
     ctvi1 = exh-inh
     ctvi2 = inh+1000
-    rho = np.divide(exh+1000, 1000)
     ctvi = np.divide(ctvi1, ctvi2, out=np.zeros_like(exh), where=ctvi2!=0)
-    ctvi = ctvi*rho
+    if options.rho_normalize:
+        rho = np.divide(exh+1000, 1000)
+        ctvi = ctvi*rho
 
     # remove negative values ?
     ctvi[ctvi<0] = 0
