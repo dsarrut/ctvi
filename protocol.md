@@ -138,7 +138,12 @@ Erode the mask before to avoid border effect
 
 ```
 
-
+Choice: 
+- erode lung mask before
+- use Eslick2018 with rho scaling
+- apply median filter r=2 with dilatation before
+- reapply mask after this median filter
+- remove 10% higher values (not representative, near vessels)
   
 
 # ctvi regional index
