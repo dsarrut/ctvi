@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import click
-import itk
 from ctvi_helpers import *
 
 # --------------------------------------------------------------------------

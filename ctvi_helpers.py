@@ -78,6 +78,7 @@ def erode_mask(image, radius):
     erodeFilter = ErodeFilterType.New()
     erodeFilter.SetInput(image)
     erodeFilter.SetForegroundValue(1)
+    #erodeFilter.SetBackgroundValue(0)
     erodeFilter.SetKernel(structuringElement)
     erodeFilter.Update()
     
@@ -138,25 +139,33 @@ def approx_mass(pix_vol, img, mask):
 def median_filter_with_mask(img, mask, radius_dilatation, radius_median):
 
     # debug
-    #input = img
-    #itk.imwrite(img, 'ctvi_before.mhd')
-    #ctvim = itk.median_image_filter(img, radius=radius_median)
-    #itk.imwrite(ctvim, 'ctvi_median.mhd')
+    debug = False
+    if debug:
+        input = img
+        itk.imwrite(img, 'ctvi_before.mhd')
+        ctvim = itk.median_image_filter(img, radius=radius_median)
+        itk.imwrite(ctvim, 'ctvi_median.mhd')
 
     dimg = dilate_at_boundaries(img, radius_dilatation)
-    #itk.imwrite(dimg, 'ctvi_before_dilated.mhd')
+
+    if debug:
+        itk.imwrite(dimg, 'ctvi_before_dilated.mhd')
 
     imgm = itk.median_image_filter(dimg, radius = radius_median)
-    #itk.imwrite(imgm, 'ctvi_median_after_dilated.mhd')
+
+    if debug:
+        itk.imwrite(imgm, 'ctvi_median_after_dilated.mhd')
 
     # reapply mask after median
-    imgm = itk.array_view_from_image(imgm)
+    imgm = itk.array_from_image(imgm)
     imgm = imgm.astype('float')
     imgm[mask == 0] = 0
 
-    #imgm = imgm.astype(np.float32)
-    #a = itk.image_from_array(imgm)
-    #a.CopyInformation(input)
-    #itk.imwrite(a, 'ctvi_median_final.mhd')
+    if debug:
+        imgm = imgm.astype(np.float32)
+        a = itk.image_from_array(imgm)
+        a.CopyInformation(input)
+        itk.imwrite(a, 'ctvi_median_final.mhd')
 
     return imgm
+

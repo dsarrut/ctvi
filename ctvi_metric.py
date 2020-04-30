@@ -20,6 +20,9 @@ def compute_ctvi(exhale, inhale, lung_mask, options):
     inh = inh.astype('float')
     mask = mask.astype('float')
 
+    # mask may have several labels
+    mask[mask != 0] = 1
+
     # "... masks were adjusted to exclude any voxels with CT number > -250 HU"
     #mask[exh>-250] = 0
     # NOT HERE -> should be done elsewhere
@@ -39,12 +42,12 @@ def compute_ctvi(exhale, inhale, lung_mask, options):
         ctvi = ctvi_delta_HU_Kipritidis2015(exh, inh, vol, mask, options)
 
     # mask according to lung mask
-    ctvi[mask==0] = 0
+    ctvi[mask == 0] = 0
 
     # debug
-    print(f'ctvi min max mean std Q90%: {np.min(ctvi[mask==1]): 0.4f} {np.max(ctvi[mask==1]): 0.4f} '
-          f'{np.mean(ctvi[mask==1]): 0.4f} {np.std(ctvi[mask==1]): 0.4f} '
-          f'{np.quantile(ctvi[mask==1],0.9): 0.4f}')
+    print(f'ctvi min max mean std Q90%: {np.min(ctvi[mask != 0]): 0.4f} {np.max(ctvi[mask != 0]): 0.4f} '
+          f'{np.mean(ctvi[mask != 0]): 0.4f} {np.std(ctvi[mask != 0]): 0.4f} '
+          f'{np.quantile(ctvi[mask != 0],0.9): 0.4f}')
 
     # convert to float32 required by itk
     ctvi = ctvi.astype(np.float32)
@@ -65,12 +68,11 @@ def compute_ctvi(exhale, inhale, lung_mask, options):
 
     # remove 10% higher
     if options.remove_10pc:
-        t = np.quantile(ctvi[ctvi>0], 0.9)
+        t = np.quantile(ctvi[mask != 0], 0.9)
         print('Q90%', t)
         ctvi[ctvi>t] = 0
         img = itk.image_from_array(ctvi)
         img.CopyInformation(exhale)
-
 
     return img
 
@@ -115,20 +117,20 @@ def mass_correction_inhale(exh, inh, mask):
     # inh' =  HUin(x) − 1000 × f (1 + HUin(x)/1000)
     # f =􏰢 (sum ρ_in(x) - sum ρ_ex(x)) / sum ρ_in(x)
     # ρ(x)≡HU(x) + 1000
-    exh_rho = np.sum(exh[mask == 1] + 1000)
-    inh_rho = np.sum(inh[mask == 1] + 1000)
+    exh_rho = np.sum(exh[mask != 0] + 1000)
+    inh_rho = np.sum(inh[mask != 0] + 1000)
     #print('rho : ', exh_rho, inh_rho)
     f = (inh_rho - exh_rho) / exh_rho
     #print('f', f)
 
     # debug
-    #print('mean exh', np.mean(exh[mask == 1]))
-    #print('mean inh', np.mean(inh[mask == 1]))
+    #print('mean exh', np.mean(exh[mask != 0]))
+    #print('mean inh', np.mean(inh[mask != 0]))
 
     # correction to inhale image
     inhs = inh - 1000 * f * (1 + inh / 1000)
 
     # debug
-    #print('mean inh', np.mean(inhs[mask == 1]))
+    #print('mean inh', np.mean(inhs[mask != 0]))
 
     return inhs
