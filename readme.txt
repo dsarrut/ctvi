@@ -53,3 +53,6 @@ montage ../png/axial_* -geometry 400 axial_large.png
 montage ../png/sagittal_* -geometry 400 sagittal_large.png
 montage ../png/coronal_* -geometry 400 coronal_large.png
 
+* Convert CTVI.mhd to Dicom slices
+python createCTVIdicom.py -i b_rho.mhd -d Acsa/A10142100241_20200420/Thorax_EXPI_2.0mm_MEDIASTIN/ -o ctvi
+
