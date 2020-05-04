@@ -39,6 +39,5 @@ We need a way to present the result with a meaningful colorscale.
 Convert final image to DICOM 
 
 
-* Convert CTVI.mhd to Dicom slices
 python createCTVIdicom.py -i b_rho.mhd -d Acsa/A10142100241_20200420/Thorax_EXPI_2.0mm_MEDIASTIN/ -o ctvi
 
