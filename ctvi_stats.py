@@ -4,69 +4,45 @@
 import click
 from ctvi_helpers import *
 import itk
+import matplotlib.pyplot as plt
+
 
 # --------------------------------------------------------------------------
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--exhale', '-e')
-@click.option('--inhale', '-i')
-@click.option('--inh2exh', '-t', help='Inhale transformed to exhale')
-@click.option('--ctvi')
-@click.option('--lung_mask_exh')
-@click.option('--lung_mask_inh')
-def ctvi_stats(exhale, inhale, inh2exh, ctvi, lung_mask_exh, lung_mask_inh):
+@click.option('--ctvi', '-i', required=True)
+@click.option('--mask', '-m', required=True)
+@click.option('--histo', help='histogram binning', default=0)
+def ctvi_stats(ctvi, mask, histo):
     '''
     Doc todo
     '''
 
-    exhale_img = itk.imread(exhale)
-    inhale_img = itk.imread(inhale)
-    inh2exh_img = itk.imread(inh2exh)
-    lung_exh_img = itk.imread(lung_mask_exh)
-    lung_inh_img = itk.imread(lung_mask_inh)
-    ctvi_img = itk.imread(ctvi)
+    ctvi = itk.imread(ctvi)
+    mask = itk.imread(mask)
 
-    exh = itk.array_from_image(exhale_img)
-    inh = itk.array_from_image(inhale_img)
-    inh2exh = itk.array_from_image(inh2exh_img)
-    ctvi = itk.array_from_image(ctvi_img)
-    lung_exh = itk.array_from_image(lung_exh_img)
-    lung_inh = itk.array_from_image(lung_inh_img)
+    check_same_geometry(ctvi, mask)
 
-    # exhale image 
-    exh_pixel_vol = pix_vol(exhale_img)
-    mask_exh = lung_exh>0   # initial lung mask
-    mask_ctvi = ctvi>0   # final CTVI lung mask (after erosion etc)
-    exh_lung_vol = exh_pixel_vol*len(exh[mask_exh])*1e-6
-    exh_ctvi_lung_vol = exh_pixel_vol*len(exh[mask_ctvi])*1e-6
-    exh_lung_mass = approx_mass(exh_pixel_vol, exh, mask_exh)
-    exh_ctvi_lung_mass = approx_mass(exh_pixel_vol, exh, mask_ctvi)
+    data = itk.array_view_from_image(ctvi)
+    mask = itk.array_view_from_image(mask)
+    mask[mask != 0] = 1
 
-    # inhale image 
-    inh_pixel_vol = pix_vol(inhale_img)
-    mask_inh = lung_inh>0   # initial lung mask
-    inh_lung_vol = inh_pixel_vol*len(inh[mask_inh])*1e-6
-    inh_lung_mass = approx_mass(inh_pixel_vol, inh, mask_inh)
+    s = basics_stats(data, mask)
 
-    # transformed inhale image 
-    inh2exh_pixel_vol = pix_vol(inh2exh_img)
-    inh2exh_lung_vol = inh2exh_pixel_vol*len(inh[mask_exh])*1e-6
-    inh2exh_ctvi_lung_vol = inh_pixel_vol*len(inh[mask_ctvi])*1e-6
-    inh2exh_lung_mass = approx_mass(inh2exh_pixel_vol, inh2exh, mask_exh)
-    inh2exh_ctvi_lung_mass = approx_mass(inh2exh_pixel_vol, inh2exh, mask_ctvi)
+    print(f'Min/Max {s.min:.2f} {s.max:.2f}  Mean/Std {s.mean:.2f} {s.std:.2f}  '
+          f' {s.pixels_count} pixels  Q10/Q90 {s.q10:.2f}  {s.q90:.2f} ')
 
-    print(f'Volume exhale CT initial {exh_lung_vol:.3f} L')
-    print(f'Volume exhale CT final {exh_ctvi_lung_vol:.3f} L')
-    print(f'Volume inhale CT initial {inh_lung_vol:.3f} L')
-    #print(f'Volume inh2exh CT initial {inh2exh_lung_vol:.3f} L') # <- check like exh
+    if histo == 0:
+        exit(0)
 
-    print(f'Approx mass exhale CT initial {exh_lung_mass:.3f} g')
-    print(f'Approx mass exhale CT final {exh_ctvi_lung_mass:.3f} g')
-    print(f'Approx mass inhale CT initial {inh_lung_mass:.3f} g')
-    #print(f'Approx mass inhale_2_exhale CT initial {inh2exh_lung_mass:.3f} g')
-    #print(f'Approx mass inhale_2_exhale CT final {inh2exh_ctvi_lung_mass:.3f} g')
+    fig = plt.figure()
+    m = mask.ravel()
+    d = data.ravel()[m != 0]
+    d = d[d!=0] # there are  a lot of almost zeros values
+    q1 = np.quantile(d, 0.9)
+    plt.hist(d, bins=histo, range=(0,q1))
+    plt.show()
 
-    
 
 # --------------------------------------------------------------------------
 if __name__ == '__main__':

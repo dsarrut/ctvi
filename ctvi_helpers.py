@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
+from box import Box
 
 def get_colormap1():
     # color palette
@@ -121,21 +122,6 @@ def pix_vol(img):
     return spacing[0]*spacing[1]*spacing[2]
 
 
-def approx_mass(pix_vol, img, mask):
-    # HU = 1000 x (mu-mu_w) / (mu_w - mu_air)
-    # mu = HU/1000 * (mu_w-mu_a) + mu_w
-    # This is WRONG for H > 0 !
-    # See for ex Schneider2000
-    mu_w = 1
-    mu_a = 0.0
-    d = img/1000.0 * (mu_w-mu_a) + mu_w
-    d[~mask] = 0.0
-    # pix_vol is in L -> to put in cc
-    # d is in g/cc
-    s = d.sum()*pix_vol*1e-3 # in grams
-    return s
-
-
 def median_filter_with_mask(img, mask, radius_dilatation, radius_median):
 
     # debug
@@ -168,4 +154,86 @@ def median_filter_with_mask(img, mask, radius_dilatation, radius_median):
         itk.imwrite(a, 'ctvi_median_final.mhd')
 
     return imgm
+
+
+def check_same_geometry(img1, img2):
+
+    origin1 = img1.GetOrigin()
+    origin2 = img2.GetOrigin()
+    if not np.allclose(origin1, origin2):
+        raise TypeError(f'images have incompatible origins: {origin1} versus {origin2}')
+
+    spacing1 = img1.GetSpacing()
+    spacing2 = img2.GetSpacing()
+    if not np.allclose(spacing1, spacing2):
+        raise TypeError(f'images have incompatible spacing: {spacing1} versus {spacing2}')
+
+    dire1 = itk.GetArrayFromVnlMatrix(img1.GetDirection().GetVnlMatrix().as_matrix())
+    dire2 = itk.GetArrayFromVnlMatrix(img2.GetDirection().GetVnlMatrix().as_matrix())
+
+    if not np.allclose(dire1, dire2):
+        raise TypeError(f'images have incompatible origins: {dire1} versus {dire2}')
+
+
+
+def lung_mass_and_volume(img, img_mask):
+    '''
+    Mass in g
+    Volume in L
+    # HU = 1000 x (mu-mu_w) / (mu_w - mu_air)
+    # mu = HU/1000 * (mu_w-mu_a) + mu_w
+    # This is WRONG for H > 0 !
+    # See for ex Schneider2000
+    '''
+
+    data = itk.array_view_from_image(img)
+    mask = itk.array_view_from_image(img_mask)
+    check_same_geometry(img, img_mask)
+
+    # lung volume (be sure to consider all labels != 0 in the mask)
+    pixel_vol = pix_vol(img) # in mm3
+    mask[mask !=0 ] = 1
+    n = mask.sum()
+    lung_vol = n*pixel_vol*1e-6 # vol in L
+
+    # lung mass
+    mu_w = 1
+    mu_a = 0.0
+    d = data / 1000.0 * (mu_w - mu_a) + mu_w
+    d[mask == 0] = 0.0
+    lung_mass = d.sum()*pixel_vol*1e-3 # mass in grams
+
+    stat = Box()
+    stat.mass_g = lung_mass
+    stat.volume_L = lung_vol
+    stat.pixels_count = n
+    stat.pixel_volume_mm3 = pixel_vol
+    return stat
+
+
+def basics_stats(img, mask):
+    stat = Box()
+    stat.pixels_count = mask.sum()
+    stat.min = np.min(img[mask != 0])
+    stat.max = np.max(img[mask != 0])
+    stat.mean = np.mean(img[mask != 0])
+    stat.std = np.std(img[mask != 0])
+    stat.q90 = np.quantile(img[mask != 0], 0.9)
+    stat.q10 = np.quantile(img[mask != 0], 0.1)
+
+    return stat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

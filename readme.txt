@@ -1,55 +1,41 @@
 
-* add stats
+Goal: compute ventilation image (CTVI) from two breath holds exhale/inhale CT
 
-for debug
-./ctvi_stats.py -e ../CC10/exhale.mhd -i ../CC10/inhale.mhd -t ../CC10/result_50.0_0.0.mhd --ctvi ../output/b.mhd --lung_mask_exh ../CC10/lung.mhd --lung_mask_inh ../CC10/lungs_0.0.mhd
+* CT acquisition 
 
-* Second test
+- two CTs
+- Breath Hold (BH) at approx. 80% inhalation and 80% exhalation
+- in Elick2018: 120 kVp, 120 mAs, 0.8 pitch
+- BH time of approx. 10 sec
+- FOV approx 50 cm from pharynx to stomach
+- reconstruction param: 'parenchymal' and/or 'mediastinal'
 
-First, erode the lung mask. 
+* Step1: compute the DVF from exhale to inhale
 
-./erode_mask.py -i ../CC10/lung.mhd -o ../CC10/lung_eroded.mhd -r 1
-
-
-Compute the ctvi
-
-./ctvi.py -e ../CC10/exhale.mhd -i ../CC10/result_50.0_0.0.mhd -m ../CC10/lung_eroded.mhd -o ../output/b.mhd -r 1
-
-
-Display some slices
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 90 -a 0  -o ../output/bidon_axial
+- extract patient, bones and lung masks
+- extract motion mask
+- perform DIR like for midp (elastix, Bspline)
+- use the DVF to transform the inhale image on the exhale support
 
 
-All slices:
+* Step2: compute the CTVI
 
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png2/axial
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png2/sagittal
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png2/coronal
+- several methods exists, see Kipritidis2019
+- method1: deltaHU according to HU difference between exhale and inhale_transformed
+- method2: deltaVol according to Jacobien of the DVF 
 
-montage ../png2/axial_* -geometry 250 montage2/axial_large.png
-montage ../png2/sagittal_* -geometry 250 montage2/sagittal_large.png
-montage ../png2/coronal_* -geometry 250 montage2/coronal_large.png
+Scaling factors
+- converted to an "absolute" ventilation in units proportional to mL/voxel
+- eventually, apply a tissue density scaling factor
 
-* First test
-
-0.0.mhd = inhale
-50.0.mhd = exhale
-result_50.0_0.0.mhd = 0.0 inhale resampled like exhale
-
-clitkAffineTransform -i 0.0.mhd -o 0.0_resampled.mhd --like result_50.0_0.0.mhd
-clitkAffineTransform -i 50.0.mhd -o 50.0_resampled.mhd --like result_50.0_0.0.mhd
-clitkAffineTransform -i lungs_50.0.mhd -o lungs_50.0_resampled.mhd --like result_50.0_0.0.mhd --interp=0
-
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 0 --slice_step 1 --slice_stop -2 -o ../png/axial
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 1 --slice_step 1 --slice_stop -2 -o ../png/sagittal
-./ctvi_slicer.py -i ../output/b.mhd --ct ../CC10/exhale.mhd -m ../CC10/lung.mhd -s 0 -a 2 --slice_step 1 --slice_stop -2 -o ../png/coronal
+Post-processing
+- almost all authors smooth final CTVI image with median filter
 
 
-montage ../png/axial_* -geometry 100 axial_small.png
-montage ../png/sagittal_* -geometry 100 sagittal_small.png
-montage ../png/coronal_* -geometry 100 coronal_small.png
+* Step3: visualisation and colorscale
 
-montage ../png/axial_* -geometry 400 axial_large.png
-montage ../png/sagittal_* -geometry 400 sagittal_large.png
-montage ../png/coronal_* -geometry 400 coronal_large.png
+We need a way to present the result with a meaningful colorscale. 
+
+Convert final image to DICOM 
+
 

@@ -1,0 +1,104 @@
+
+
+
+
+../ventil/ctvi.py -e exhale_mediastinal_TEST.mhd -i output_nonrigid9_med/result_resampled_TEST.mhd -m exhale_lung_eroded_TEST.mhd -r 0 -o output_ctvi/bidon.mhd --rho_normalize -r 1 --radius_erode_mask 1
+
+../ventil/ctvi.py -e exhale_mediastinal.mhd -i output_nonrigid9_med/result_resampled.mhd -m exhale_lung.mhd -o output_ctvi/bidon2.mhd --rho_normalize -r 2 --radius_erode_mask 3
+
+
+
+
+../ventil/ctvi_stats.py -e exhale_mediastinal.mhd -i inhale_mediastinal.mhd -t output_nonrigid9_med/result_resampled.mhd --ctvi ./output_ctvi/bidon2.mhd --lung_mask_exh exhale_lung.mhd --lung_mask_inh inhale_lung.mhd
+
+
+
+../ventil/lung_stats.py -i exhale_mediastinal.mhd -m exhale_lung.mhd
+../ventil/lung_stats.py -i inhale_mediastinal.mhd -m inhale_lung.mhd
+../ventil/lung_stats.py -i output_nonrigid9_med/result_resampled.mhd -m exhale_lung.mhd
+../ventil/ctvi_stats.py -i output_ctvi/bidon2.mhd -m exhale_lung.mhd --histo 200
+
+
+
+APLDM
+
+../ventil/apldm.py -e exhale_mediastinal.mhd -i inhale_mediastinal.mhd -m exhale_lung.mhd -n inhale_lung.mhd -o output/inhale_mediastinal_apldm.mhd
+
+../ventil/apldm.py -e exhale_parenchyma.mhd -i inhale_parenchyma.mhd -m exhale_lung_resampled.mhd -n inhale_lung_resampled.mhd -o output/inhale_parenchyma_apldm.mhd
+
+ELASTIX
+
+old
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid9 -p params/dir_bspline5.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+New mediastinal
+./elastix -f exhale_mediastinal.mhd -m inhale_mediastinal.mhd -out output/output_nonrigid12 -p params/dir_bspline5_anc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./elastix -f exhale_mediastinal.mhd -m output/inhale_mediastinal_apldm.mhd -out output/output_nonrigid13 -p params/dir_bspline5_anc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+vv exhale_mediastinal.mhd --overlay output_nonrigid12/result.0.mhd exhale_mediastinal.mhd --overlay output_nonrigid13/result.0.mhd --linkall exhale_mediastinal.mhd --overlay output_nonrigid9_med/result.mhd
+
+==> 12 slighlty better than 13 (almost identical)
+
+New parenchyma
+
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output/output_nonrigid14 -p params/dir_bspline5_anc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./elastix -f exhale_parenchyma.mhd -m output/inhale_parenchyma_apldm.mhd -out output/output_nonrigid15 -p params/dir_bspline5_anc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+TODO:
+./transformix -in exhale_mediastinal.mhd -tp output_nonrigid9/TransformParameters.0.txt -out output_nonrigid9_med
+clitkAffineTransform -i output_nonrigid9_med/result.mhd -o output_nonrigid9_med/result_resampled.mhd --like exhale_mediastinal.mhd
+clitkSetBackground -i output_nonrigid9_med/result_resampled.mhd -o output_nonrigid9_med/result_resampled_bg.mhd -m exhale_lung.mhd -p -1000
+
+maybe 14 better than 15 better than 9 
+
+
+vv exhale_parenchyma.mhd --overlay output_nonrigid14/result.0.mhd exhale_parenchyma.mhd --overlay output_nonrigid15/result.0.mhd --linkall exhale_parenchyma.mhd --overlay output_nonrigid9_med/result.mhd
+
+--------
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output/output_nonrigid16 -p params/dir_bspline8_anc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+--> strictly equal to 14
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid17 -p params/dir_bspline10_msd.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./elastix -f exhale_parenchyma.mhd -m output/inhale_parenchyma_apldm.mhd -out output_nonrigid18 -p params/dir_bspline10_msd.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+test around -183 Z
+
+similar 
+
+--------
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid19 -p params/dir_bspline11_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid20 -p params/dir_bspline12_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./transformix -in inhale_mediastinal.mhd -tp output_nonrigid19/TransformParameters.0.txt -out output_nonrigid19_med
+
+
+YES  for 19 !! And 20 seems maybe slightly better at some places, slightly worse at others (Z=-190)
+
+--------
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid21 -p params/dir_bspline13_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+21 seems less good ? Not really ? Corolan -72 much less good than 19
+
+--> maybe random influence? not clear bw 19 and 20 
+
+restart with all pixels 
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid22 -p params/dir_bspline14_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+
+--------
+
+
+./elastix -f exhale_parenchyma.mhd -m inhale_parenchyma.mhd -out output_nonrigid23 -p params/dir_bspline15_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
+./elastix -f exhale_parenchyma.mhd -m output/inhale_parenchyma_apldm.mhd -out output_nonrigid24 -p params/dir_bspline15_ncc.txt -t0 output_rigid1/TransformParameters.0.txt -fMask exhale_mm.mhd
+
