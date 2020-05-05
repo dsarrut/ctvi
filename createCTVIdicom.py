@@ -75,19 +75,23 @@ def createCTVIDicom(ctvi, dicom, output="outputDcm"):
 
     # Scale the ctvi:
     ctviArray = itk.array_from_image(ctvi)
-    doseScaling = np.amax(ctviArray)/(2**16-1)
-    ctviArray = (ctviArray/doseScaling).astype(int)
-    ctviArray = ctviArray.swapaxes(0, 2)
+    ctviArray = 1000.0*ctviArray
+    #doseScaling = np.amax(ctviArray)/(2**16-1)
+    #ctviArray = (ctviArray/doseScaling).astype(int)
+    ctviArray = (ctviArray).astype(int)
+    maxCtvi = np.amax(ctviArray)
+    #ctviArray = ctviArray.swapaxes(0, 2)
     ctviImage = itk.image_from_array(ctviArray.astype(float))
     ctviImage.CopyInformation(ctvi)
-    itk.imwrite(ctviImage, "testctvi.mhd")
+    itk.imwrite(ctviImage, "testctvi.mha")
 
     # Compute the output dicom using clitkWrite DicomSerie
     now = datetime.datetime.now()
-    bashCommand = "clitkWriteDicomSeries -i testctvi.mhd -d " + dicom + " -o " + output + " -p -e -k 0008|0060,0028|1052,0028|1053,0028|0101,0028|0102,0028|1054,0020|4000,0008|0023,0008|0033,0020|000d,0020|0052,0020|000e -t OT,0," + str(doseScaling) + ",16,15,unit,CTVI," + now.strftime("%Y%m%d") + "," + now.strftime("%H%M%S") + ".000000," + studyInstanceUID + "," + frameOfReferenceUID + "," + newSeriesInstanceUID
+    bashCommand = "clitkWriteDicomSeries -i testctvi.mha -d " + dicom + " -o " + output + " -p -e -k 0008|0060,0028|1052,0028|1053,0028|0101,0028|0102,0028|1054,0020|4000,0008|0023,0008|0033,0020|000d,0020|0052,0020|000e,0028|1050,0028|1051 -t OT,0," + str(1.0) + ",16,15,unit,CTVI," + now.strftime("%Y%m%d") + "," + now.strftime("%H%M%S") + ".000000," + studyInstanceUID + "," + frameOfReferenceUID + "," + newSeriesInstanceUID + "," + str(maxCtvi/2.0) + "," + str(maxCtvi)
     #print(bashCommand)
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
+    os.remove("testctvi.mha")
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
